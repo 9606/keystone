@@ -1,0 +1,39 @@
+name: Build macOS universal binaries
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos-arm64:
+    runs-on: macos-latest
+    env:
+      BUILD_TYPE: Release
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake
+
+    - name: Configure and build
+      run: |
+        mkdir build
+        cd build
+        cmake \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DBUILD_SHARED_LIBS=ON \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+          ..
+        make -j$(sysctl -n hw.ncpu)
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: keystone-macos-arm64
+        path: build/llvm/lib/*
